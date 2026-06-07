@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONTOUR: BLIND ZONE</title>
+    <style>
+        :root {
+            --bg-color: #2b2b2b;
+            --panel-bg: #3c3f41;
+            --text-color: #bbbbbb;
+            --accent-green: #4f805d;
+            --accent-red: #9e3e3e;
+            --border-color: #555555;
+            --sap-blue: #3f51b5;
+        }
+
+        body.alarm-active {
+            --bg-color: #3a1e1e;
+            --panel-bg: #4a2828;
+            --border-color: #6e3333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        /* ЗАСТАВКА (INTRO) */
+        #intro-screen {
+            width: 100%;
+            max-width: 800px;
+            padding: 40px;
+            background-color: var(--panel-bg);
+            border: 2px solid var(--border-color);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .system-header {
+            border-bottom: 2px dashed var(--border-color);
+            padding-bottom: 10px;
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .intro-text {
+            line-height: 1.6;
+            font-size: 14px;
+            text-align: justify;
+        }
+
+        .intro-bullets {
+            margin-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .intro-bullets span {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .loading-bar-container {
+            width: 100%;
+            height: 25px;
+            background-color: #222;
+            border: 1px solid var(--border-color);
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--accent-green);
+            transition: width 0.1s linear;
+        }
+
+        .loading-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 4px;
+            font-size: 12px;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        #start-btn {
+            background-color: var(--sap-blue);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            text-align: center;
+            letter-spacing: 1px;
+            transition: background 0.2s;
+        }
+
+        #start-btn:hover {
+            background-color: #5c6bc0;
+        }
+
+        /* ГОЛОВНИЙ ІНТЕРФЕЙС ГРИ */
+        #game-screen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            grid-template-columns: 300px 1fr 300px;
+            grid-template-rows: 60px 1fr;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background-color: #222;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-weight: bold;
+        }
+
+        .alarm-banner {
+            color: var(--accent-red);
+            font-weight: bold;
+            animation: blink 1s infinite;
+            display: none;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* ЛІВА ПАНЕЛЬ: ПРОФІЛЬ */
+        .sidebar-left {
+            background-color: var(--panel-bg);
+            border-right: 2px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .profile-card, .stats-card {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 12px;
+            background-color: #222;
+            border: 1px solid var(--border-color);
+            margin-top: 5px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        /* ЦЕНТРАЛЬНА ЗОНА: РОБОЧИЙ СТІЛ / SAP */
+        .main-workspace {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            position: relative;
+        }
+
+        .sap-window {
+            width: 100%;
+            max-width: 500px;
+            background-color: #ffffff;
+            color: #333333;
+            border: 3px solid var(--sap-blue);
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sap-header {
+            background-color: var(--sap-blue);
+            color: white;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sap-body {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background-color: #f5f5f5;
+        }
+
+        #sap-btn {
+            background-color: #4caf50;
+            color: white;
+            border: 2px solid #388e3c;
+            padding: 20px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px #2e7d32;
+            width: 100%;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        #sap-btn:active {
+            box-shadow: 0 0px #2e7d32;
+            transform: translateY(4px);
+        }
+
+        #sap-btn:disabled {
+            background-color: #9e9e9e !important;
+            border-color: #757575 !important;
+            box-shadow: none !important;
+            transform: none !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .sap-restrictions {
+            font-size: 11px;
+            color: #c62828;
+            text-align: center;
+            font-weight: bold;
+            min-height: 15px;
+        }
+
+        /* ПРАВА ПАНЕЛЬ: МОДУЛІ ТА АПГРЕЙДИ */
+        .sidebar-right {
+            background-color: var(--panel-bg);
+            border-left: 2px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .module-box {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            background: rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .module-box h4 {
+            font-size: 13px;
+            color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+        }
+
+        .upgrade-btn {
+            background-color: #444;
+            color: #ddd;
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .upgrade-btn:hover:not(:disabled) {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .upgrade-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* МОДАЛЬНЕ ВІКНО ПОДІЙ (СПОКУСИ / ХАОС) */
+        #event-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--accent-red);
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal-title {
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+            border-bottom: 1px solid var(--accent-red);
+            padding-bottom: 5px;
+        }
+
+        .modal-body {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background-color: #444;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 12px;
+        }
+
+        .action-btn:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ЗАСТАВКА (INTRO) -->
+    <div id="intro-screen">
+        <div class="system-header">CONTOUR: BLIND ZONE // v1.0.26</div>
